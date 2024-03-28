@@ -1,7 +1,7 @@
 import user from './record.json';
 import { useEffect, useState } from 'react';
 import "./App.css";
-import { BarChart } from 'reaviz';
+import { BarChart, BarSeries } from 'reaviz';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faUser, faChartBar, faInfoCircle, faSignOutAlt } from '@fortawesome/free-solid-svg-icons';
 
@@ -17,7 +17,6 @@ const gradeMapping = {
   "W": 0
 };
 
-
 function App() {
   const [keysToFilter, setKeysToFilter] = useState([]);
   const [selectedOption, setSelectedOption] = useState("");
@@ -26,14 +25,31 @@ function App() {
   const [result, setResult] = useState([]);
   const [chartData, setChartData] = useState([]);
 
- 
   function generateChartData(data) {
-    return data.map((item, index) => ({
-      key: `Data ${index + 1}`, 
-      data: gradeMapping[item.grade],
+    // Group data by batch
+    const batches = {};
+    data.forEach(item => {
+      const batch = item.register_number.toString().substring(0, 4);
+      if (!batches[batch]) {
+        batches[batch] = [];
+      }
+      batches[batch].push({
+        key: item.register_number,
+        data: gradeMapping[item.grade]
+      });
+    });
+  
+    // Convert grouped data into series objects
+    const series = Object.entries(batches).map(([batch, batchData], index) => ({
+      key: `Batch ${batch}`,
+      data: batchData
     }));
+  
+    return series;
   }
-
+  
+        
+  
   useEffect(() => {
     const keys = Object.keys(user[0]).filter(key => key !== "grade");
     setKeysToFilter(keys);
@@ -90,7 +106,12 @@ function App() {
           </header>
           <div style={{ margin: '55px', textAlign: 'center' }}>
             {chartData.length > 0 && (
-              <BarChart id='bar' style={{ marginLeft: "500px" }} width={600} height={300} horizontal={true} data={chartData} />
+              <BarChart
+                width={800}
+                height={400}
+                data={chartData}
+                series={<BarSeries type="grouped" />}
+              />
             )}
           </div>
           <select onChange={(e) => changeText(e)} className="select-container">
